@@ -515,6 +515,8 @@ var SECTIONS=[
 function D(e,t,sec,opt,days){return {e:e,t:t,sec:sec,opt:!!opt,days:days||null};}
 var DEF_DAILY=[
   D("💧","Drink water","earlymorning"),
+  D("🐕","Let dogs out","earlymorning"),
+  D("🥣","Feed dogs (AM)","earlymorning"),
   D("💊","Take meds / vitamins","earlymorning"),
   D("🚿","Shower","earlymorning",true),
   D("🪥","Brush teeth","earlymorning"),
@@ -522,27 +524,33 @@ var DEF_DAILY=[
   D("💈","Cologne","earlymorning",true),
   D("💇","Brush hair","earlymorning"),
   D("🍳","Breakfast","earlymorning"),
+  D("🥪","Pack lunch","earlymorning",true,WD),
   D("💧","Drink water","midday"),
   D("🥗","Lunch","midday"),
   D("📬","Check mail","midday"),
   D("🏋️","Work out","midday",false,WE),
   D("🌳","Get outside","midday",false,WE),
   D("🧹","Tidy up","midday",false,WE),
+  D("🐾","Play with dogs","midday",false,WE),
+  D("🥣","Feed dogs (PM)","evening"),
+  D("🚶","Walk the dogs","evening"),
   D("🍽️","Dinner","evening"),
   D("🏋️","Work out","evening",false,WD),
   D("🗑️","Trash to the road","evening",false,[1]),
   D("🧹","Tidy 10 min","evening"),
-  D("👨‍👩‍👧","Family time","evening",true),
+  D("🍿","Unwind / hobby time","evening",true),
+  D("🐕","Last potty break","night"),
   D("🪥","Brush teeth","night"),
   D("🧴","Skincare","night",true),
+  D("👔","Lay out work clothes","night",false,[0,1,2,3,4]),
   D("📵","Screens off","night"),
   D("🌙","Prep for tomorrow","night"),
   D("😴","In bed on time","night")
 ];
 function P(e,t){return {e:e,t:t};}
-var DEF_WEEK=[P("🛒","Grocery run"),P("🧺","Laundry"),P("🧽","Clean the house"),P("🍱","Meal prep"),P("🗑️","Take out trash"),P("🛏️","Change bed sheets"),P("🛁","Dog bath"),P("💵","Review budget"),P("🗓️","Plan the week"),P("🪴","Water plants"),P("📞","Call family / friend"),P("🌿","Yardwork"),P("💪","Gym 3x"),P("❤️","Date night")];
-var DEF_MONTH=[P("🧾","Pay bills"),P("💳","Budget review"),P("🧼","Deep clean"),P("🚗","Check car / oil"),P("🎯","Review goals"),P("📱","Back up phone"),P("🔁","Check subscriptions"),P("🥫","Restock household"),P("🧯","Test smoke detectors"),P("🧘","Self-care day")];
-var DEF_YEAR=[P("🦷","Dentist"),P("🩺","Doctor checkup"),P("👁️","Eye exam"),P("🪪","Renew registrations"),P("🛡️","Review insurance"),P("📋","Taxes"),P("🔐","Update passwords"),P("📊","Check credit report"),P("🧳","Declutter wardrobe"),P("🎯","Set yearly goals"),P("🎂","Plan birthdays / holidays")];
+var DEF_WEEK=[P("🛒","Grocery run"),P("🧺","Laundry"),P("🧽","Clean the house"),P("🍱","Meal prep"),P("🗑️","Take out trash & recycling"),P("🛏️","Change bed sheets"),P("🛁","Dog bath"),P("🐕","Brush the dogs"),P("🥣","Wash dog bowls"),P("🚗","Fuel up the car"),P("🧹","Vacuum (pet hair!)"),P("🧴","Mop floors"),P("🚽","Clean bathroom"),P("💵","Review budget"),P("🗓️","Plan the week"),P("🪴","Water plants"),P("📞","Call family / friend"),P("🌿","Yardwork"),P("💪","Gym 3x"),P("❤️","Date night")];
+var DEF_MONTH=[P("🧾","Pay bills"),P("💳","Budget review"),P("💊","Dogs: flea/tick & heartworm meds"),P("✂️","Trim dog nails"),P("🛏️","Wash dog bedding"),P("🧼","Deep clean one room"),P("🧊","Clean out fridge"),P("🌬️","Check air filter"),P("🚗","Check car / oil / tires"),P("🚿","Wash the car"),P("🎯","Review goals"),P("📱","Back up phone"),P("🔁","Check subscriptions"),P("🥫","Restock household"),P("🧯","Test smoke detectors"),P("🗂️","Organize one messy spot"),P("🧘","Self-care day")];
+var DEF_YEAR=[P("🦷","Dentist"),P("🩺","Doctor checkup"),P("👁️","Eye exam"),P("🐕","Dogs: vet checkup & vaccines"),P("🪪","Renew dog licenses"),P("🪪","Renew registrations"),P("🛡️","Review insurance"),P("📋","Taxes"),P("🔐","Update passwords"),P("📊","Check credit report"),P("🔋","Smoke detector batteries"),P("🌡️","HVAC service"),P("🍂","Clean gutters"),P("🧼","Deep clean carpets"),P("🧳","Declutter wardrobe"),P("📦","Garage / storage cleanout"),P("🎯","Set yearly goals"),P("🎂","Plan birthdays / holidays"),P("✈️","Plan a getaway")];
 
 var CHIPS={
   today:[["💧","Water"],["🧘","Meditate"],["📖","Read"],["🚶","Walk"],["🤸","Stretch"],["✍️","Journal"],["☀️","Sunlight"],["🦷","Floss"],["🛏️","Make bed"],["☕","Coffee"]],
@@ -647,6 +655,23 @@ function seedExtras(){
     var ht=state.today.tasks.some(function(t){return t.t==="Trash to the road";});
     if(!ht)state.today.tasks.push({id:uid(),e:"🗑️",t:"Trash to the road",sec:"evening",opt:false,days:[1]});
     state.settings.seedMonTrash=true;save();
+  }
+  if(!state.settings.seedFullPack){
+    function hasT(p,name){return state[p].tasks.some(function(t){return t.t===name;});}
+    DEF_DAILY.forEach(function(d){if(!hasT("today",d.t))state.today.tasks.push(mk(d));});
+    DEF_WEEK.forEach(function(d){if(!hasT("week",d.t))state.week.tasks.push(mk(d));});
+    DEF_MONTH.forEach(function(d){if(!hasT("month",d.t))state.month.tasks.push(mk(d));});
+    DEF_YEAR.forEach(function(d){if(!hasT("year",d.t))state.year.tasks.push(mk(d));});
+    // pin heavy chores to Saturdays so weekdays stay light
+    var sat=new Date();sat.setDate(sat.getDate()+((6-sat.getDay())+7)%7);
+    var satKey=dayKey(sat);
+    ["Clean the house","Dog bath","Yardwork","Meal prep","Vacuum (pet hair!)","Mop floors"].forEach(function(nm){
+      state.week.tasks.forEach(function(t){if(t.t===nm&&!t.due){t.due=satKey;t.rep="week";}});
+    });
+    // grocery on Sundays
+    var sun=new Date();sun.setDate(sun.getDate()+((7-sun.getDay())%7));
+    state.week.tasks.forEach(function(t){if(t.t==="Grocery run"&&!t.due){t.due=dayKey(sun);t.rep="week";}});
+    state.settings.seedFullPack=true;save();
   }
 }
 
@@ -1272,7 +1297,8 @@ function setHeader(){var d=new Date(),h=d.getHours();
   document.getElementById("date").textContent=d.toLocaleDateString(undefined,{weekday:"long",month:"long",day:"numeric"});}
 
 /* ---------- lava lamp + bg motion ---------- */
-var lava=document.getElementById("lava"),lctx=lava.getContext("2d"),blobs=[],baseHue=160,root=document.documentElement,W=0,H=0,DPR=Math.min(2,window.devicePixelRatio||1);
+var lava=document.getElementById("lava"),lctx=null;try{lctx=lava.getContext("2d");}catch(e){}
+var blobs=[],baseHue=160,root=document.documentElement,W=0,H=0,DPR=Math.min(2,window.devicePixelRatio||1);
 function sizeLava(){W=lava.width=Math.floor(innerWidth*DPR);H=lava.height=Math.floor(innerHeight*DPR);lava.style.width=innerWidth+"px";lava.style.height=innerHeight+"px";}
 function initBlobs(){blobs=[];for(var i=0;i<8;i++){blobs.push({x:Math.random()*W,y:Math.random()*H,r:(160+Math.random()*200)*DPR,vx:(Math.random()-.5)*.6*DPR,vy:(Math.random()-.5)*.6*DPR,ho:Math.random()*120-60});}}
 var reduce=window.matchMedia&&window.matchMedia("(prefers-reduced-motion:reduce)").matches;
@@ -1293,7 +1319,7 @@ function frame(){
   root.style.setProperty("--accent-glow","hsl("+h1.toFixed(1)+" 95% 60% / .32)");
   root.style.setProperty("--accent-dim","hsl("+h1.toFixed(1)+" 70% 50% / .16)");
   // lava
-  if(s.lava&&W){
+  if(s.lava&&W&&lctx){
     lctx.clearRect(0,0,W,H);lctx.globalCompositeOperation="lighter";
     var spd=1+(s.motion?scrollBoost:0);
     for(var i=0;i<blobs.length;i++){var b=blobs[i];
